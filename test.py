@@ -1,12 +1,13 @@
 # Install required libraries
-# pip install sentence-transformers sqlalchemy python-dotenv psycopg2-binary
+# pip install sentence-transformers sqlalchemy python-dotenv psycopg2-binary pandas numpy
 
 import os
+import pandas as pd
+import numpy as np
 from dotenv import load_dotenv
 from sqlalchemy import create_engine, Table, Column, Integer, Text, MetaData, select, func
 from sqlalchemy.orm import sessionmaker
 from sentence_transformers import SentenceTransformer
-import numpy as np
 
 # Load environment variables
 load_dotenv()
@@ -74,24 +75,86 @@ def search_similar_questions(query_embedding: str, limit: int = 5):
     results = session.execute(query).fetchall()
     return results
 
+def evaluate_accuracy(test_results_df):
+    """
+    Calculate accuracy metrics for the test results.
+    
+    Args:
+        test_results_df (pd.DataFrame): DataFrame containing test results
+        
+    Returns:
+        dict: Dictionary containing various accuracy metrics
+    """
+    # Calculate exact matches (both chapter and verse correct)
+    exact_matches = (
+        (test_results_df['predicted_chapter'] == test_results_df['actual_chapter']) & 
+        (test_results_df['predicted_verse'] == test_results_df['actual_verse'])
+    ).mean()
+    
+    # Calculate chapter-only accuracy
+    chapter_accuracy = (
+        test_results_df['predicted_chapter'] == test_results_df['actual_chapter']
+    ).mean()
+    
+    # Calculate verse-only accuracy (within correct chapters)
+    verse_accuracy = (
+        (test_results_df['predicted_chapter'] == test_results_df['actual_chapter']) & 
+        (test_results_df['predicted_verse'] == test_results_df['actual_verse'])
+    ).sum() / (test_results_df['predicted_chapter'] == test_results_df['actual_chapter']).sum()
+    
+    return {
+        'exact_match_accuracy': exact_matches,
+        'chapter_accuracy': chapter_accuracy,
+        'verse_accuracy': verse_accuracy
+    }
+
 def main():
-    # Take user input
-    user_query = input("Enter your question: ")
-
-    # Convert the query to an embedding
-    query_embedding = query_to_embedding(user_query)
-    print(f"Query embedding: {query_embedding}")
-
-    # Search for similar questions in the database
-    results = search_similar_questions(query_embedding)
-
-    # Display the results
-    if results:
-        print("\nMost relevant results:")
-        for chapter_no, verse_no, distance in results:
-            print(f"Chapter {chapter_no}, Verse {verse_no} (Distance: {distance:.4f})")
-    else:
-        print("No results found.")
+    # Read the test file
+    test_df = pd.read_csv('test_file.csv')
+    
+    # Initialize results list
+    results = []
+    
+    # Process each question
+    for idx, row in test_df.iterrows():
+        # Convert query to embedding
+        query_embedding = query_to_embedding(row['question'])
+        
+        # Search for similar questions
+        search_results = search_similar_questions(query_embedding, limit=1)
+        
+        if search_results:
+            pred_chapter, pred_verse, distance = search_results[0]
+            
+            # Store results
+            results.append({
+                'question': row['question'],
+                'actual_chapter': row['chapter'],
+                'actual_verse': row['verse'],
+                'predicted_chapter': pred_chapter,
+                'predicted_verse': pred_verse,
+                'cosine_distance': distance
+            })
+    
+    # Convert results to DataFrame
+    results_df = pd.DataFrame(results)
+    
+    # Save results to CSV
+    results_df.to_csv('results.csv', index=False)
+    
+    # Calculate accuracy metrics
+    accuracy_metrics = evaluate_accuracy(results_df)
+    
+    # Print accuracy metrics
+    print("\nAccuracy Metrics:")
+    print(f"Exact Match Accuracy: {accuracy_metrics['exact_match_accuracy']:.2%}")
+    print(f"Chapter-only Accuracy: {accuracy_metrics['chapter_accuracy']:.2%}")
+    print(f"Verse Accuracy (within correct chapters): {accuracy_metrics['verse_accuracy']:.2%}")
+    
+    # Print some example predictions
+    print("\nSample Predictions (first 5):")
+    print(results_df[['question', 'actual_chapter', 'actual_verse', 
+                     'predicted_chapter', 'predicted_verse', 'cosine_distance']].head())
 
 if __name__ == "__main__":
     main()
