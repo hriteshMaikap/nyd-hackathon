@@ -1,1 +1,4 @@
 /nyd-env
+.env
+__pycache__
+data/procesed
