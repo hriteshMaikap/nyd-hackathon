@@ -1,35 +1,18 @@
-from sqlalchemy import Table, Column, Integer, Text as SQLText, MetaData, select, func
+from sqlalchemy import Table, Column, Integer, Text as SQLText, MetaData, select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from sentence_transformers import SentenceTransformer
 from typing import List, Tuple, Dict
 import os
 from dotenv import load_dotenv
-from rich.console import Console
-from rich.panel import Panel
-from rich.text import Text
-from rich import box
-from rich.table import Table as RichTable
-import sys
-import unicodedata
-from rich.padding import Padding
-from rich.style import Style
-import locale
 from mistralai import Mistral
-from flask import Flask, jsonify, request, render_template, url_for
+from flask import Flask, jsonify, request, render_template
 from flask_cors import CORS
 
-app = Flask(__name__,
-    static_folder='static',
-    template_folder='templates')
+app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
 
-# Set locale for proper Unicode handling
-locale.setlocale(locale.LC_ALL, '')
-
-# Initialize Rich console with Unicode support
-console = Console(force_terminal=True, force_interactive=True, color_system="truecolor")
-
+# Load environment variables
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -48,14 +31,6 @@ MISTRAL_MODEL = "mistral-large-latest"
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 session = Session()
-
-# Initialize Mistral client
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-if not MISTRAL_API_KEY:
-    raise ValueError("MISTRAL_API_KEY not set in .env file")
-
-model = "mistral-large-latest"
-mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 
 # Define the metadata and tables
 metadata = MetaData()
@@ -214,29 +189,6 @@ def get_best_match_with_details(query: str) -> Dict:
     
     return verse_details
 
-def normalize_sanskrit(text: str) -> str:
-    """
-    Normalizes Sanskrit text for proper display.
-    """
-    if not text:
-        return ""
-    # Normalize Unicode characters
-    normalized = unicodedata.normalize('NFC', text)
-    # Add proper spacing for verses
-    parts = normalized.split('||')
-    if len(parts) > 1:
-        return " || ".join(part.strip() for part in parts)
-    return normalized
-
-
-def create_styled_text(text: str, style: str = None) -> Text:
-    """
-    Creates styled text with proper word wrapping.
-    """
-    styled_text = Text(text, style=style)
-    styled_text.overflow = "fold"
-    return styled_text
-
 def generate_verse_summary(translation: str, commentary: str) -> str:
     """
     Generates a summary of the verse using Mistral AI.
@@ -270,107 +222,7 @@ Please provide a concise summary (2-3 sentences) of the main teaching or message
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        console.print(f"Error generating summary: {str(e)}", style="bold red")
         return "Summary generation failed. Please refer to the translation and commentary above."
-
-def display_verse(verse_details: Dict):
-    """
-    Displays verse details with generated summary using Rich.
-    """
-    # Create header
-    header = Text()
-    header.append("॥ श्रीमद्भगवद्गीता ॥\n", style="bold cyan")
-    header.append(f"Chapter {verse_details['chapter_no']}, Verse {verse_details['verse_no']}\n", style="bold cyan")
-    header.append(f"Speaker: {verse_details['speaker']}", style="yellow")
-    
-    # Create panel for Sanskrit verse with proper formatting
-    sanskrit_text = normalize_sanskrit(verse_details['sanskrit_verse'])
-    sanskrit_styled = create_styled_text(sanskrit_text, "bold magenta")
-    sanskrit_panel = Panel(
-        Padding(sanskrit_styled, (1, 2)),
-        title="॥ श्लोक ॥",
-        border_style="bright_blue",
-        box=box.DOUBLE_EDGE,
-        title_align="center",
-        width=100
-    )
-    
-    # Generate summary using Mistral
-    with console.status("[bold green]Generating verse summary..."):
-        summary = generate_verse_summary(verse_details['translation'], verse_details['commentary'])
-    
-    # Create panel for summary
-    summary_styled = create_styled_text(summary)
-    summary_panel = Panel(
-        Padding(summary_styled, (1, 2)),
-        title="AI-Generated Summary",
-        border_style="cyan",
-        box=box.DOUBLE_EDGE,
-        title_align="center",
-        width=100
-    )
-    
-    # Create match information table
-    match_info = RichTable(
-        show_header=True,
-        box=box.SIMPLE_HEAD,
-        title="Match Information",
-        width=100
-    )
-    match_info.add_column("Match Source", style="cyan", justify="center")
-    match_info.add_column("Similarity Score", style="cyan", justify="center")
-    match_info.add_row(
-        verse_details['match_source'],
-        f"{verse_details['similarity_score']:.4f}"
-    )
-
-    # Print everything with proper spacing
-    console.print("\n")
-    console.print(Padding(header, (1, 2)))
-    console.print(sanskrit_panel)
-    console.print(summary_panel)
-    console.print(match_info)
-    console.print("\n")
-
-def display_welcome():
-    """
-    Displays welcome message and instructions.
-    """
-    welcome_text = Text()
-    welcome_text.append("\n🕉️  श्रीमद्भगवद्गीता  🕉️\n\n", style="bold cyan")
-    welcome_text.append("Ask any question about the Bhagavad Gita or use these commands:\n\n", style="yellow")
-    welcome_text.append("- 'EXIT' to quit\n", style="green")
-    welcome_text.append("- 'HELP' for instructions\n", style="green")
-    
-    console.print(Panel(
-        welcome_text,
-        title="Bhagavad Gita Search",
-        border_style="cyan",
-        box=box.DOUBLE_EDGE,
-        width=100
-    ))
-
-def display_help():
-    """
-    Displays help information.
-    """
-    help_text = Text()
-    help_text.append("\nAvailable Commands:\n", style="bold yellow")
-    help_text.append("- Type your question in natural language\n", style="green")
-    help_text.append("- Type 'EXIT' to quit the application\n", style="green")
-    help_text.append("- Type 'HELP' to see this message again\n\n", style="green")
-    help_text.append("Example Questions:\n", style="bold yellow")
-    help_text.append("- What does Krishna say about dharma?\n", style="cyan")
-    help_text.append("- How can I achieve peace of mind?\n", style="cyan")
-    help_text.append("- What is karma yoga?\n", style="cyan")
-    
-    console.print(Panel(
-        help_text,
-        title="Help",
-        border_style="yellow",
-        box=box.DOUBLE_EDGE,
-        width=100
-    ))
 
 @app.route('/')
 def index():
