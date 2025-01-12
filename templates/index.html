@@ -1,0 +1,75 @@
+<!-- Gita Search HTML -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gita Search</title>
+  <link rel="stylesheet" href="..\static\styles.css">
+  <script src="..\static\script.js" defer></script>
+</head>
+<body class="bg-gradient">
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>॥ श्रीमद्भगवद्गीता ॥</h1>
+      <p>Divine Knowledge of the Supreme</p>
+    </div>
+
+    <!-- Search Section -->
+    <div class="search-section">
+      <input type="text" id="query" placeholder="Ask your question about the Bhagavad Gita...">
+      <button id="search-button">Search</button>
+      <button id="help-button">?</button>
+    </div>
+
+    <!-- Help Dialog -->
+    <div id="help-dialog" class="dialog hidden">
+      <div class="dialog-content">
+        <h2>How to Use This Search</h2>
+        <p>You can ask questions about the Bhagavad Gita in natural language. For example:</p>
+        <ul>
+          <li>What does Krishna say about dharma?</li>
+          <li>How can I achieve peace of mind?</li>
+          <li>What is karma yoga?</li>
+        </ul>
+        <button id="close-help">Close</button>
+      </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results" class="hidden">
+      <div class="result">
+        <h2 id="verse-header"></h2>
+        <p id="verse-speaker"></p>
+
+        <div class="section">
+          <h3>॥ श्लोक ॥</h3>
+          <p id="sanskrit-verse"></p>
+        </div>
+
+        <div class="section">
+          <h3>Translation</h3>
+          <p id="translation"></p>
+        </div>
+
+        <div class="section">
+          <h3>Summary</h3>
+          <p id="summary"></p>
+        </div>
+
+        <div class="info">
+          <div>
+            <p>Match Source</p>
+            <p id="match-source"></p>
+          </div>
+          <div>
+            <p>Similarity Score</p>
+            <p id="similarity-score"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
