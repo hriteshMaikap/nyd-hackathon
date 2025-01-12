@@ -60,6 +60,10 @@ This is a Flask application that allows users to search for verses from the Bhag
 
     Open your web browser and go to `http://localhost:5000` to use the website.
 
+## Video Demonstration
+https://github.com/user-attachments/assets/4c6281c7-c3ff-4f68-8396-889b75d007ab
+
+
 
 ## License
 
