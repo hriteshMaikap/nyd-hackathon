@@ -27,7 +27,9 @@ if not MISTRAL_API_KEY:
 mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 MISTRAL_MODEL = "mistral-large-latest"
 
-# Initialize SQLAlchemy engine and session
+# Initialize SQLAlchemy engine and session, this postgres:: is needed for sqlalchemy 1.4 and above
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -67,6 +69,18 @@ chapter_table = Table(
     Column("chapter_heading", SQLText),
     Column("chapter_desc_heading", SQLText),
     Column("chapter_intro", SQLText)
+)
+
+pys_question_table = Table(
+    "pys_question",
+    metadata,
+    Column("question_id", Integer, primary_key=True),
+    Column("chapter_no", Integer),
+    Column("verse_no", Integer),
+    Column("sanskrit", SQLText),
+    Column("translation", SQLText),
+    Column("possible_question", SQLText),
+    Column("question_embedding", SQLText)
 )
 
 def query_to_embedding(query: str) -> str:
@@ -223,6 +237,42 @@ Please provide a concise summary (2-3 sentences) of the main teaching or message
         return response.choices[0].message.content.strip()
     except Exception as e:
         return "Summary generation failed. Please refer to the translation and commentary above."
+    
+def search_pys_questions(query: str, limit: int = 5) -> List[Dict]:
+    """
+    Searches for similar questions in the pys_question table using vector embeddings.
+    
+    Args:
+        query (str): The user's query
+        limit (int): Number of results to return
+    
+    Returns:
+        List[Dict]: List of matching verses with their details
+    """
+    query_embedding = query_to_embedding(query)
+    
+    # Search in pys_questions
+    search_query = select(
+        pys_question_table.c.chapter_no,
+        pys_question_table.c.verse_no,
+        pys_question_table.c.sanskrit,
+        pys_question_table.c.translation,
+        pys_question_table.c.possible_question,
+        (pys_question_table.c.question_embedding.op('<=>')(query_embedding)).label("similarity")
+    ).order_by(
+        pys_question_table.c.question_embedding.op('<=>')(query_embedding)
+    ).limit(limit)
+    
+    results = []
+    for row in session.execute(search_query):
+        results.append({
+            "chapter_no": row.chapter_no,
+            "verse_no": row.verse_no,
+            "sanskrit": row.sanskrit,
+            "translation": row.translation,
+        })
+    
+    return results[0]
 
 @app.route('/')
 def index():
@@ -242,6 +292,21 @@ def search():
             summary = generate_verse_summary(result['translation'], result['commentary'])
             result['summary'] = summary
             return jsonify(result)
+        return jsonify({'error': 'No matching verses found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@app.route('/api/search_pys', methods=['POST'])
+def search_pys():
+    try:
+        query = request.json.get('query')
+        if not query:
+            return jsonify({'error': 'Query is required'}), 400
+            
+        results = search_pys_questions(query, limit=5)  # You can adjust the limit as needed
+        if results:
+            return jsonify(results)
         return jsonify({'error': 'No matching verses found'}), 404
             
     except Exception as e:

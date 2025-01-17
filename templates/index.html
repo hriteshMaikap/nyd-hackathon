@@ -1,72 +1,100 @@
-<!-- Gita Search HTML -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gita Search</title>
+  <title>Sacred Texts Search</title>
   <link rel="stylesheet" href="..\static\styles.css">
   <script src="..\static\script.js" defer></script>
 </head>
-<body class="bg-gradient">
+<body>
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1>॥ श्रीमद्भगवद्गीता ॥</h1>
-      <p>Divine Knowledge of the Supreme</p>
+      <div class="header">
+        <h1>॥ श्रीमद्भगवद्गीता ॥</h1>
+        <p>Divine Knowledge of the Supreme</p>
+      </div>
+      <div class="mode-selector">
+        <select id="search-mode">
+          <option value="gita">Bhagavad Gita</option>
+          <option value="pys">Patanjali Yoga Sutras</option>
+        </select>
+      </div>
     </div>
 
     <!-- Search Section -->
     <div class="search-section">
-      <input type="text" id="query" placeholder="Ask your question about the Bhagavad Gita...">
+      <input type="text" id="query" placeholder="Ask your question...">
       <button id="search-button">Search</button>
-      <button id="help-button">?</button>
+      <button id="help-button" class="help-button">?</button>
     </div>
 
     <!-- Help Dialog -->
     <div id="help-dialog" class="dialog hidden">
       <div class="dialog-content">
         <h2>How to Use This Search</h2>
-        <p>You can ask questions about the Bhagavad Gita in natural language. For example:</p>
-        <ul>
-          <li>What does Krishna say about dharma?</li>
-          <li>How can I achieve peace of mind?</li>
-          <li>What is karma yoga?</li>
-        </ul>
+        <div id="gita-help">
+          <p>For Bhagavad Gita, you can ask questions like:</p>
+          <ul>
+            <li>What does Krishna say about dharma?</li>
+            <li>How can I achieve peace of mind?</li>
+            <li>What is karma yoga?</li>
+          </ul>
+        </div>
+        <div id="pys-help" class="hidden">
+          <p>For Patanjali Yoga Sutras, you can ask questions like:</p>
+          <ul>
+            <li>What are the eight limbs of yoga?</li>
+            <li>How to control the mind?</li>
+            <li>What is samadhi?</li>
+          </ul>
+        </div>
         <button id="close-help">Close</button>
       </div>
     </div>
 
-    <!-- Results Section -->
-    <div id="results" class="hidden">
+    <!-- Gita Results Section -->
+    <div id="gita-results" class="results-container hidden">
       <div class="result">
-        <h2 id="verse-header"></h2>
-        <p id="verse-speaker"></p>
-
+        <h2 class="verse-header"></h2>
+        <p class="speaker"></p>
+        
         <div class="section">
-          <h3>॥ श्लोक ॥</h3>
-          <p id="sanskrit-verse"></p>
+          <h3>Sanskrit Verse</h3>
+          <p class="sanskrit-text"></p>
         </div>
-
+        
         <div class="section">
           <h3>Translation</h3>
-          <p id="translation"></p>
+          <p class="translation"></p>
+        </div>
+        
+        <div class="section">
+          <h3>Commentary</h3>
+          <p class="commentary"></p>
         </div>
 
         <div class="section">
           <h3>Summary</h3>
-          <p id="summary"></p>
+          <p class="summary"></p>
         </div>
+      </div>
+    </div>
 
-        <div class="info">
-          <div>
-            <p>Match Source</p>
-            <p id="match-source"></p>
-          </div>
-          <div>
-            <p>Similarity Score</p>
-            <p id="similarity-score"></p>
-          </div>
+    <!-- PYS Results Section -->
+    <div id="pys-results" class="results-container hidden">
+      <div class="result">
+        <h2 class="verse-header"></h2>
+        
+        <div class="section">
+          <h3>Sanskrit</h3>
+          <p class="sanskrit-text"></p>
+        </div>
+        
+        <div class="section">
+          <h3>Translation</h3>
+          <p class="translation"></p>
         </div>
       </div>
     </div>
