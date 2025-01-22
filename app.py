@@ -207,18 +207,22 @@ def get_best_match_with_details(query: str) -> Dict:
         })
     return verse_details
 
-def generate_verse_summary(translation: str, commentary: str) -> str:
+def generate_verse_summary(translation: str, commentary: str, query: str) -> str:
     """
     Generates a summary of the verse using Mistral AI.
     
     Args:
         translation (str): English translation of the verse
         commentary (str): Commentary on the verse
+        query (str): The user's original question
     
     Returns:
         str: Generated summary
     """
-    prompt = f"""Given this verse from the Bhagavad Gita:
+    prompt = f"""Given this verse from the Bhagavad Gita and user's question:
+
+User's Question:
+{query}
 
 Translation:
 {translation}
@@ -226,7 +230,7 @@ Translation:
 Commentary:
 {commentary}
 
-Please provide a concise summary (2-3 sentences) of the main teaching or message from this verse."""
+Please provide a concise summary (5-6 sentences) of the main teaching or message from this verse, addressing the user's question if relevant meaning, connect the dots of user's query with the learnings of Bhagwad Gita to guide the user."""
 
     try:
         response = mistral_client.chat.complete(
@@ -304,8 +308,8 @@ def search():
                     ]
                 })
             
-            # Generate summary for relevant verses
-            summary = generate_verse_summary(result['translation'], result['commentary'])
+            # Updated to pass query to generate_verse_summary
+            summary = generate_verse_summary(result['translation'], result['commentary'], query)
             result['summary'] = summary
             return jsonify(result)
         return jsonify({'error': 'No matching verses found'}), 404
