@@ -178,29 +178,33 @@ def get_verse_details(chapter_no: int, verse_no: int) -> Dict:
         }
     return None
 
+SIMILARITY_THRESHOLD = 0.5
 def get_best_match_with_details(query: str) -> Dict:
     """
     Gets the single best matching verse across all embedding types along with its details.
-    
-    Args:
-        query (str): The user's query
-    
-    Returns:
-        Dict: Complete verse information including match details and verse content
+    Filters out results with similarity scores above the threshold.
     """
     results = search_across_embeddings(query, limit=1)
     if not results:
         return None
         
     chapter_no, verse_no, similarity, source = results[0]
+    
+    # Check if similarity score is above threshold (indicating poor match)
+    if similarity > SIMILARITY_THRESHOLD:
+        return {
+            "is_irrelevant": True,
+            "similarity_score": similarity
+        }
+    
     verse_details = get_verse_details(chapter_no, verse_no)
     
     if verse_details:
         verse_details.update({
+            "is_irrelevant": False,
             "similarity_score": similarity,
             "match_source": source
         })
-    
     return verse_details
 
 def generate_verse_summary(translation: str, commentary: str) -> str:
@@ -288,7 +292,19 @@ def search():
             
         result = get_best_match_with_details(query)
         if result:
-            # Generate summary for the verse
+            if result.get("is_irrelevant"):
+                return jsonify({
+                    'is_irrelevant': True,
+                    'message': 'Your question seems to be outside the scope of the sacred texts. Please ask questions about the Bhagavad Gita or Patanjali Yoga Sutras.',
+                    'examples': [
+                        'How did Bhagavad Gita start?',
+                        'What is the importance of karma yoga?',
+                        'What are the eight limbs of yoga?',
+                        'How can I achieve peace of mind according to Krishna?'
+                    ]
+                })
+            
+            # Generate summary for relevant verses
             summary = generate_verse_summary(result['translation'], result['commentary'])
             result['summary'] = summary
             return jsonify(result)

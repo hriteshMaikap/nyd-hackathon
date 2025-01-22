@@ -158,6 +158,24 @@ body {
   margin-bottom: 10px;
 }
 
+#irrelevant-results {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+}
+
+#irrelevant-results ul {
+  margin-top: 1rem;
+  padding-left: 1.5rem;
+}
+
+#irrelevant-results li {
+  margin: 0.5rem 0;
+  color: #666;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
